@@ -1,73 +1,86 @@
 import random
-from shapes import Point, Rectangle, RectangleDrawer
+from shapes import Point
+from drawers import Drawer, RectangleDrawer
+import turtle
 
-random_coord_range = (0, 100)
-
-
-# -------------------------------------- Build random Rectangle
-def build_random_point():
-    x = random.randint(*random_coord_range)
-    y = random.randint(*random_coord_range)
-    return Point(x, y)
+random_coord_range = (0, 500)
 
 
-def build_points_pair():
-    p1 = build_random_point()
-    p2 = build_random_point()
-    return p1, p2
+class GeometryGame(Drawer):
+    # TODO: user point property
+    def __init__(self):
+        Drawer.__init__(self)
 
+        self._rectangle = None
+        self._user_point = None
 
-def build_rectangle():
-    p1, p2 = build_points_pair()
-    try:
-        return RectangleDrawer(upper_right=p1, lower_left=p2).draw()
-    except ValueError:
-        return False
+    def start(self):
+        # draw rectangle
+        self.rectangle.set_canvas(self.canvas)
+        self.rectangle.draw()
 
+        # get point in rectangle
+        self.get_user_point()
+        self.draw_user_point()
 
-def build_random_rectangle():
-    rec = False
-    while not rec:
-        rec = build_rectangle()
-
-    return rec
-
-
-# --------------------------------------- Guess Game
-def guess_point_in_rec(rec):
-    print("Guess a point inside rectangle: ")
-    user_point = Point(
-        float(input("Guess X: ")),
-        float(input("Guess Y: "))
-    )
-    return user_point.is_in_rectangle(rec)
-
-
-def guess_rectangle_area(rec):
-    user_area = float(input("Guess Area: "))
-    if user_area == rec.area():
-        return True
-    else:
-        return False
-
-
-def main():
-    while True:
-        ingame_rectangle = build_random_rectangle()
-        if guess_point_in_rec(ingame_rectangle):
-            print("Hooray! you guessed right!")
-            print("I see a smart Gamer! but can you guess the area of rectangle? B)")
-            if guess_rectangle_area(ingame_rectangle):
-                print("correct! you are a genius, My LORD!")
-            else:
-                print("ha ha! Wrong Answer, Maybe after all you aren't that smart :))")
+        # validate user point in rectangle
+        if self.rectangle.is_point_in_rectangle(self._user_point):
+            self.correct_guess_point_in_rec()
 
         else:
-            print("Oops! Wrong answer")
+            self.incorrect_guess_point_in_rec()
 
-        print("try again...")
-        print("----------------------------------")
+        turtle.done()
+
+    def correct_guess_point_in_rec(self):
+        self.write("CORRECT, BRAVO!", position=Point(0, -100), font=40)
+
+    def incorrect_guess_point_in_rec(self):
+        self.write("Oops! INCORRECT :(", position=Point(0, -100), font=40)
+
+    @property
+    def rectangle(self):
+        if not self._rectangle:
+            self._rectangle = self.random_rectangle
+
+        return self._rectangle
+
+    def get_user_point(self):
+        """Get user guess point"""
+        x = turtle.numinput('point in rec', 'Guess X:')
+        y = turtle.numinput('point in rec', 'Guess Y:')
+        # relate user point to 0,0 of rectangle lower point
+        self._user_point = Point(x, y)
+
+    def draw_user_point(self):
+        user_point = self._user_point - self.rectangle.lower_left
+        self.draw_dot(user_point)
+        self.write("Your Point", movement="relative", position=Point(0, 0))
+
+    @property
+    def build_random_point(self):
+        x = random.randint(*random_coord_range)
+        y = random.randint(*random_coord_range)
+        return Point(x, y)
+
+    @property
+    def build_rectangle(self):
+        p1 = self.build_random_point
+        p2 = self.build_random_point
+
+        try:
+            return RectangleDrawer(upper_right=p1, lower_left=p2)
+        except ValueError:
+            return False
+
+    @property
+    def random_rectangle(self):
+        rec = False
+        while not rec:
+            rec = self.build_rectangle
+
+        return rec
 
 
 if __name__ == '__main__':
-    main()
+    GeometryGame().start()
