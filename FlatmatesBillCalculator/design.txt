@@ -1,0 +1,31 @@
+3 things should be in this file.
+1 - Title
+2 - description
+3 - Object types
+
+Title: Flatmates Bill
+
+Description: An app that gets the amount of a bill for a particular period and the days that each of the flatmates
+stayed in the house for that period and returns how much each flatmate has to pay. Its also generates a PDF report
+stating the names of the flatmates, the period, and how much each of them had to pay.
+
+Objects: (A trick: just by looking the Nouns in the description you can come up with ideas to how design your app
+and Objects)
+
+class:
+    attribute
+    method()
+
+Amount is an attribute of Bill :
+    Bill:
+        amount
+        period
+
+    Flatmates:
+        name
+        days_in_house
+        pays(bill)
+
+    PdfReport:
+        filename
+        generate(flatmates, bill)
