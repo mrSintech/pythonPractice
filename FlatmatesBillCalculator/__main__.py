@@ -1,3 +1,23 @@
+from fpdf import FPDF
+
+class Flatmate:
+    """
+    Creates a flatmate person who lives in the flat and pays a share of the bill
+    """
+
+    def __init__(self, name: str, days_in_house: int):
+        self.name = name
+        self.days_in_house = days_in_house
+
+    def pays(self, bill):
+        weight = self.days_in_house / bill.sum_of_all_flatmates_days()
+        flatmate_pay = bill.amount * weight
+        return round(flatmate_pay, 2)
+
+    def __repr__(self):
+        return f"{self.name} has been in house for {self.days_in_house} days"
+
+
 class Bill:
     """
     Objects that contains data about a bill, such as total amount and period of the bill.
@@ -6,18 +26,19 @@ class Bill:
         self.amount = amount
         self.period = period
 
+        self.flatmates = []
 
-class Flatmate:
-    """
-    Creates a flatmate person who lives in the flat and pays a share of the bill
-    """
-    
-    def __init__(self, name: str, days_in_house: int):
-        self.name = name
-        self.days_in_house = days_in_house
+    def __repr__(self):
+        return f"the bill of {self.period} is {self.amount}$ and {self.flatmates}"
 
-    def pays(self, bill:  Bill):
-        return bill.amount / 2
+    def add_flatmate(self, *flatmates: Flatmate) -> list:
+        for flatmate in flatmates:
+            self.flatmates.append(flatmate)
+
+        return self.flatmates
+
+    def sum_of_all_flatmates_days(self) -> int:
+        return sum(day.days_in_house for day in self.flatmates)
 
 
 class PdfReport:
@@ -26,16 +47,32 @@ class PdfReport:
     their name or their due amount and the period of the bill.
     """
     
-    def __init__(self, filenames: str, bill: Bill):
-        self.filenames = filenames
+    def __init__(self, bill: Bill):
         self.bill = bill
 
-    def generate(self, flatmates: tuple, bill: Bill):
-        ...
+    def generate(self, destination: str = None):
+        pdf = FPDF(
+            orientation="P",
+            unit='pt',
+            format="A4"
+        )
+        pdf.add_page()
+
+        # add text
+        pdf.set_font(family="Times", size=24, style="B")
+        pdf.cell(w=0, h=80, txt="Flatmates Bill", border=1, align="C", ln=1)
+        pdf.cell(w=100, h=40, txt="period: ", border=1)
+        pdf.cell(w=0, h=40, txt="March 2022", border=1, ln=1)
+        pdf.cell(w=100, h=40, txt="period: ", border=1)
+
+
+        pdf.output("bill.pdf")
 
 
 the_bill = Bill(amount=120, period="March 2020")
-john = Flatmate(name="John", days_in_house=20)
+john = Flatmate(name="John", days_in_house=11)
 marry = Flatmate(name="Marry", days_in_house=25)
+the_bill.add_flatmate(john, marry)
 
-print(john.pays(the_bill))
+PdfReport(the_bill).generate()
+
