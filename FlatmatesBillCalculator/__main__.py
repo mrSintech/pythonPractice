@@ -1,7 +1,6 @@
 import webbrowser
 
 from fpdf import FPDF
-import ast
 
 
 class Flatmate:
@@ -26,7 +25,7 @@ class Bill:
     """
     Objects that contains data about a bill, such as total amount and period of the bill.
     """
-    def __init__(self, amount: int, period: str):
+    def __init__(self, amount: float, period: str):
         self.amount = amount
         self.period = period
 
@@ -34,6 +33,13 @@ class Bill:
 
     def __repr__(self):
         return f"the bill of {self.period} is {self.amount}$ and {self.flatmates}"
+
+    def __str__(self):
+        flatmates = f"{'name':<9} | {'days':<4} | {'pays':<9} in {self.period}\n"
+        for flatmate in self.flatmates:
+            flatmates += f"{flatmate.name:<9} | {flatmate.days_in_house:<4} | {flatmate.pays(self):<9}$\n"
+
+        return flatmates
 
     def add_flatmate(self, *flatmates: Flatmate) -> list:
         for flatmate in flatmates:
@@ -86,12 +92,24 @@ class PdfReport:
         pdf.cell(w=100, h=40, txt=self.bill.period,)
         pdf.cell(h=self.cell_height, w=0, txt=f"Total : {self.bill.amount}$", ln=1)
 
-    def build_flatmates_pay(self):
+    def build_flatmates_table_header(self):
         pdf = self.pdf_file
         self.set_font(size=12, style="B")
+        pdf.cell(h=self.cell_height, w=100, txt="name")
+        pdf.cell(h=self.cell_height, w=100, txt="days in house")
+        pdf.cell(h=self.cell_height, ln=1, w=100, txt="Pay")
+
+    def build_flatmate_row(self, flatmate):
+        pdf = self.pdf_file
+        pdf.cell(h=self.cell_height, w=100, txt=flatmate.name)
+        pdf.cell(h=self.cell_height, w=100, txt=str(flatmate.days_in_house))
+        pdf.cell(h=self.cell_height, ln=1, w=100, txt=str(flatmate.pays(self.bill)) + "$")
+
+    def build_flatmates_table(self):
+        self.set_font(size=14)
+        self.build_flatmates_table_header()
         for flatmate in self.bill.flatmates:
-            pdf.cell(h=self.cell_height, w=100, txt=flatmate.name)
-            pdf.cell(h=self.cell_height, ln=1, w=100, txt=str(flatmate.pays(self.bill))+"$")
+            self.build_flatmate_row(flatmate)
 
     def output(self):
         pdf = self.pdf_file
@@ -100,21 +118,26 @@ class PdfReport:
         webbrowser.open(self.filename)  # automatically open generated pdf file
 
     def generate(self):
-        pdf = self.pdf_file
-
-        pdf.add_page()
+        self.pdf_file.add_page()
         self.build_header()
         self.build_middle()
-        self.build_flatmates_pay()
+        self.build_flatmates_table()
         self.output()
 
 
 if __name__ == "__main__":
-    the_bill = Bill(amount=120, period="March 2020")
-    john = Flatmate(name="John", days_in_house=11)
-    marry = Flatmate(name="Marry", days_in_house=25)
-    linda = Flatmate(name="Linda", days_in_house=19)
-    the_bill.add_flatmate(john, marry, linda)
+    # CLI
+    bill_amount = input("Hey user, enter the house bill amount: ")
+    bill_period = input("what month is this bill for? (e.g April 2023): ")
+    house_bill = Bill(amount=float(bill_amount), period=bill_period)
 
-    PdfReport(the_bill).generate()
+    population = input("how many people are living in that house: ")
 
+    for i in range(1, int(population)+1):
+        name = input(f"Enter person #{i} name: ")
+        days = input(f"in that period How many days person #{i} was in the house: ")
+        flatmt = Flatmate(name=name, days_in_house=int(days))
+        house_bill.add_flatmate(flatmt)
+
+    print(house_bill)
+    PdfReport(house_bill).generate()
