@@ -1,4 +1,6 @@
 from fpdf import FPDF
+import ast
+
 
 class Flatmate:
     """
@@ -49,30 +51,43 @@ class PdfReport:
     
     def __init__(self, bill: Bill):
         self.bill = bill
+        self._pdf_file = None
+        self._global_font = None
+
+    def set_font(self, font: str = "Times", size: int = 24, style: str = "B"):
+        pdf = self.pdf_file
+        pdf.set_font(family=font, size=size, style=ast.literal_eval(style))
+
+    @property
+    def pdf_file(self):
+        if not self._pdf_file:
+            self._pdf_file = FPDF(orientation="P", unit='pt', format="A4")
+            self._pdf_file.set_font(family="Times", size=24, style="B")
+        return self._pdf_file
+
+    def pdf_header(self):
+        pdf = self.pdf_file
+
 
     def generate(self, destination: str = None):
-        pdf = FPDF(
-            orientation="P",
-            unit='pt',
-            format="A4"
-        )
+        pdf = self.pdf_file
+
         pdf.add_page()
 
         # add text
-        pdf.set_font(family="Times", size=24, style="B")
         pdf.cell(w=0, h=80, txt="Flatmates Bill", border=1, align="C", ln=1)
         pdf.cell(w=100, h=40, txt="period: ", border=1)
         pdf.cell(w=0, h=40, txt="March 2022", border=1, ln=1)
         pdf.cell(w=100, h=40, txt="period: ", border=1)
 
-
         pdf.output("bill.pdf")
 
 
-the_bill = Bill(amount=120, period="March 2020")
-john = Flatmate(name="John", days_in_house=11)
-marry = Flatmate(name="Marry", days_in_house=25)
-the_bill.add_flatmate(john, marry)
+if __name__ == "__main__":
+    the_bill = Bill(amount=120, period="March 2020")
+    john = Flatmate(name="John", days_in_house=11)
+    marry = Flatmate(name="Marry", days_in_house=25)
+    the_bill.add_flatmate(john, marry)
 
-PdfReport(the_bill).generate()
+    PdfReport(the_bill).generate()
 
