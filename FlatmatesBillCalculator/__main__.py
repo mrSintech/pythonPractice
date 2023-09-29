@@ -1,3 +1,5 @@
+import webbrowser
+
 from fpdf import FPDF
 import ast
 
@@ -54,40 +56,65 @@ class PdfReport:
         self._pdf_file = None
         self._global_font = None
 
-    def set_font(self, font: str = "Times", size: int = 24, style: str = "B"):
+        self.cell_height = 40
+        self.filename = None
+
+    def set_font(self, font: str = "Times", size: int = 24, style=None):
         pdf = self.pdf_file
-        pdf.set_font(family=font, size=size, style=ast.literal_eval(style))
+        if style:
+            pdf.set_font(family=font, size=size, style=f"{style}")
+        else:
+            pdf.set_font(family=font, size=size)
 
     @property
     def pdf_file(self):
         if not self._pdf_file:
             self._pdf_file = FPDF(orientation="P", unit='pt', format="A4")
-            self._pdf_file.set_font(family="Times", size=24, style="B")
+            self.set_font()
         return self._pdf_file
 
-    def pdf_header(self):
+    def build_header(self):
         pdf = self.pdf_file
+        self.set_font(style="B")
+        pdf.image("static/house.png", w=40, h=40)
+        pdf.cell(w=0, h=self.cell_height*2, txt="Flatmates Bill", border=1, align="C", ln=1)
 
+    def build_middle(self):
+        pdf = self.pdf_file
+        self.set_font(size=15, style="B")
+        pdf.cell(w=100, h=40, txt="period: ")
+        pdf.cell(w=100, h=40, txt=self.bill.period,)
+        pdf.cell(h=self.cell_height, w=0, txt=f"Total : {self.bill.amount}$", ln=1)
 
-    def generate(self, destination: str = None):
+    def build_flatmates_pay(self):
+        pdf = self.pdf_file
+        self.set_font(size=12, style="B")
+        for flatmate in self.bill.flatmates:
+            pdf.cell(h=self.cell_height, w=100, txt=flatmate.name)
+            pdf.cell(h=self.cell_height, ln=1, w=100, txt=str(flatmate.pays(self.bill))+"$")
+
+    def output(self):
+        pdf = self.pdf_file
+        self.filename = f"{self.bill.period}.pdf"
+        pdf.output(self.filename)
+        webbrowser.open(self.filename)  # automatically open generated pdf file
+
+    def generate(self):
         pdf = self.pdf_file
 
         pdf.add_page()
-
-        # add text
-        pdf.cell(w=0, h=80, txt="Flatmates Bill", border=1, align="C", ln=1)
-        pdf.cell(w=100, h=40, txt="period: ", border=1)
-        pdf.cell(w=0, h=40, txt="March 2022", border=1, ln=1)
-        pdf.cell(w=100, h=40, txt="period: ", border=1)
-
-        pdf.output("bill.pdf")
+        self.build_header()
+        self.build_middle()
+        self.build_flatmates_pay()
+        self.output()
 
 
 if __name__ == "__main__":
     the_bill = Bill(amount=120, period="March 2020")
     john = Flatmate(name="John", days_in_house=11)
     marry = Flatmate(name="Marry", days_in_house=25)
-    the_bill.add_flatmate(john, marry)
+    linda = Flatmate(name="Linda", days_in_house=19)
+    the_bill.add_flatmate(john, marry, linda)
 
     PdfReport(the_bill).generate()
 
